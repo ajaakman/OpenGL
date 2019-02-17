@@ -1,7 +1,20 @@
+#ifdef EMSCRIPTEN
+#include <emscripten/emscripten.h>
+#define GLFW_INCLUDE_ES3
+#else
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#endif
 
 #include <iostream>
+#include <GLFW/glfw3.h>
+
+#ifdef EMSCRIPTEN
+static void dispatch_main(void* fp)
+{
+	std::function<void()>* func = (std::function<void()>*)fp;
+	(*func)();
+}
+#endif
 
 static unsigned int CompileShader(unsigned int type, const std::string& source)
 {
@@ -64,8 +77,8 @@ int main(void)
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 
-	if (glewInit() != GLEW_OK)
-		std::cout << "Error!" << std::endl;
+	//if (glewInit() != GLEW_OK)
+	//	std::cout << "Error!" << std::endl;
 
 	std::cout << glGetString(GL_VERSION) << std::endl;
 
@@ -84,31 +97,27 @@ int main(void)
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
 
 	std::string vertexShader = 
-		"#version 330 core\n"
-		"\n"
-		"layout(location = 0) in vec4 position;\n"
-		"\n"
+		"attribute highp vec4 position;\n"
 		"void main()\n"
 		"{\n"
 		"	gl_Position = position;\n"
 		"}\n";
 
-	std::string fragmentShader=
-		"#version 330 core\n"
-		"\n"
-		"layout(location = 0) out vec4 color;\n"
-		"\n"
+	std::string fragmentShader =
 		"void main()\n"
 		"{\n"
-		"	color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+		"	gl_FragColor = vec4(1.0, 0.0, 0.8, 1.0);\n"
 		"}\n";
 
 	unsigned int shader = CreateShader(vertexShader, fragmentShader);
 	glUseProgram(shader);
 
 	/* Loop until the user closes the window */
-	while (!glfwWindowShouldClose(window))
-	{
+#ifdef EMSCRIPTEN
+	std::function<void()> mainLoop = [&]() {
+#else
+	while (!glfwWindowShouldClose(window)) {	
+#endif
 		/* Render here */
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -119,7 +128,11 @@ int main(void)
 
 		/* Poll for and process events */
 		glfwPollEvents();
+#ifdef EMSCRIPTEN
+	};	emscripten_set_main_loop_arg(dispatch_main, &mainLoop, 0, 1);
+#else
 	}
+#endif
 
 	glDeleteProgram(shader);
 

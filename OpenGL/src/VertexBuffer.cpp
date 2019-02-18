@@ -1,6 +1,13 @@
 #include "VertexBuffer.h"
 #include "Renderer.h"
 
+#ifdef EMSCRIPTEN
+#define GLFW_INCLUDE_ES3
+#include <GLFW/glfw3.h>
+#else
+#include <GL/glew.h>
+#endif
+
 VertexBuffer::VertexBuffer(const void * data, unsigned int size)
 {
 	GLCall(glGenBuffers(1, &m_RendererID));

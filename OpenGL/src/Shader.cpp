@@ -5,6 +5,13 @@
 #include <string>
 #include <sstream>
 
+#ifdef EMSCRIPTEN
+#define GLFW_INCLUDE_ES3
+#include <GLFW/glfw3.h>
+#else
+#include <GL/glew.h>
+#endif
+
 #include "Renderer.h"
 
 Shader::Shader(const std::string & filepath)

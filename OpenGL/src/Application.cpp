@@ -1,4 +1,10 @@
+#ifdef EMSCRIPTEN
+#include <emscripten/emscripten.h>
+#define GLFW_INCLUDE_ES3
+#else
 #include <GL/glew.h>
+#endif
+
 #include <GLFW/glfw3.h>
 
 #include <iostream>
@@ -14,6 +20,14 @@
 #include "VertexArray.h"
 #include "Shader.h"
 #include "Texture.h"
+
+#ifdef EMSCRIPTEN
+static void dispatch_main(void* fp)
+{
+	std::function<void()>* func = (std::function<void()>*)fp;
+	(*func)();
+}
+#endif
 
 int main(void)
 {
@@ -39,10 +53,10 @@ int main(void)
 	glfwMakeContextCurrent(window);
 
 	glfwSwapInterval(1); // Synchronise framerate to monitors refresh rate.
-
+#ifndef EMSCRIPTEN
 	if (glewInit() != GLEW_OK)
 		std::cout << "Error!" << std::endl;
-
+#endif
 	std::cout << glGetString(GL_VERSION) << std::endl;
 	{
 		float positions[] = {
@@ -64,16 +78,15 @@ int main(void)
 		VertexBuffer vb(positions, 4 * 4 * sizeof(float));
 
 		VertexBufferLayout layout;
-		layout.Push<float>(2);
-		layout.Push<float>(2);
+		layout.Push(2);
+		layout.Push(2);
 		va.AddBuffer(vb, layout);
 
 		IndexBuffer ib(indices, 6);
 
 		Shader shader("res/shaders/Basic.shader");
-		shader.Bind();		
-		shader.SetUniform4f("u_Color", 0.8f, 0.4f, 0.8f, 1.0f);
-
+		//shader.SetUniform4f("u_Color", 0.8f, 0.4f, 0.8f, 1.0f);
+		shader.Bind();
 		Texture texture("res/textures/logo.png");
 		texture.Bind();
 		shader.SetUniform1i("u_Texture", 0);
@@ -88,13 +101,16 @@ int main(void)
 		float r = 0.0f;
 		float increment = 0.05f;
 		/* Loop until the user closes the window */
-		while (!glfwWindowShouldClose(window))
-		{
+#ifdef EMSCRIPTEN
+		std::function<void()> mainLoop = [&]() {
+#else
+		while (!glfwWindowShouldClose(window)) {
+#endif		
 			/* Render here */
 			renderer.Clear();
 
 			shader.Bind();
-			shader.SetUniform4f("u_Color", r, 0.4f, 0.8f, 1.0f);
+			//shader.SetUniform4f("u_Color", r, 0.4f, 0.8f, 1.0f);
 
 			renderer.Draw(va, ib, shader);
 
@@ -110,7 +126,11 @@ int main(void)
 
 			/* Poll for and process events */
 			glfwPollEvents();
+#ifdef EMSCRIPTEN
+		};	emscripten_set_main_loop_arg(dispatch_main, &mainLoop, 0, 1);
+#else
 		}
+#endif
 	}
 
 	glfwTerminate();

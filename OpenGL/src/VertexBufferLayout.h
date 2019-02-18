@@ -1,7 +1,12 @@
 #pragma once
 
 #include <vector>
+#ifdef EMSCRIPTEN
+#define GLFW_INCLUDE_ES3
+#include <GLFW/glfw3.h>
+#else
 #include <GL/glew.h>
+#endif
 #include "Renderer.h"
 
 struct VertexBufferElement
@@ -18,7 +23,6 @@ struct VertexBufferElement
 			case GL_UNSIGNED_INT:	 return 4;
 			case GL_UNSIGNED_BYTE:	 return 1;
 		}
-		ASSERT(false);
 		return 0;
 	}
 };
@@ -29,16 +33,17 @@ private:
 	std::vector<VertexBufferElement> m_Elements;
 	unsigned int m_Stride;
 public:
-	VertexBufferLayout()
-		: m_Stride(0){}
+	VertexBufferLayout();
 
-	template<typename T>
+	//template<typename T>
 	void Push(unsigned int count)
 	{
-		static_assert(false);
+		//static_assert(false);
+		m_Elements.push_back({ count, GL_FLOAT, GL_FALSE });
+		m_Stride += count * VertexBufferElement::GetSizeOfType(GL_FLOAT);
 	}
 
-	template<>
+	/*template<>
 	void Push<float>(unsigned int count)
 	{
 		m_Elements.push_back({ count, GL_FLOAT, GL_FALSE });
@@ -57,7 +62,7 @@ public:
 	{
 		m_Elements.push_back({ count, GL_UNSIGNED_BYTE, GL_TRUE });
 		m_Stride += count * VertexBufferElement::GetSizeOfType(GL_UNSIGNED_BYTE);
-	}
+	}*/
 
 	inline const std::vector<VertexBufferElement> GetElements() const& { return m_Elements; }
 	inline unsigned int GetStride() const { return m_Stride; }

@@ -1,6 +1,13 @@
 #include "Renderer.h"
 #include <iostream>
 
+#ifdef EMSCRIPTEN
+#define GLFW_INCLUDE_ES3
+#include <GLFW/glfw3.h>
+#else
+#include <GL/glew.h>
+#endif
+
 void GLClearError()
 {
 	while (glGetError() != GL_NO_ERROR);

@@ -3,6 +3,13 @@
 #include "VertexBufferLayout.h"
 #include "Renderer.h"
 
+#ifdef EMSCRIPTEN
+#define GLFW_INCLUDE_ES3
+#include <GLFW/glfw3.h>
+#else
+#include <GL/glew.h>
+#endif
+
 VertexArray::VertexArray()
 {
 	GLCall(glGenVertexArrays(1, &m_RendererID));

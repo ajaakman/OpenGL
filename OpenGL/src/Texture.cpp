@@ -1,6 +1,7 @@
 #include "Texture.h"
 
-#include "vendor/stb_image/stb_image.h"
+#include "vendor/pico_png/picoPNG.h"
+#include "IOManager.h"
 
 #ifdef EMSCRIPTEN
 #define GLFW_INCLUDE_ES3
@@ -12,7 +13,7 @@
 Texture::Texture(const std::string & path)
 	: m_RendererID(0), m_FilePath(path), m_LocalBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0)
 {
-	stbi_set_flip_vertically_on_load(1);
+	/*stbi_set_flip_vertically_on_load(1);
 	m_LocalBuffer = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 4);
 
 	GLCall(glGenTextures(1, &m_RendererID));
@@ -27,7 +28,30 @@ Texture::Texture(const std::string & path)
 	GLCall(glBindTexture(GL_TEXTURE_2D, 0));
 
 	if (m_LocalBuffer)
-		stbi_image_free(m_LocalBuffer);
+		stbi_image_free(m_LocalBuffer);*/
+
+	
+	std::vector<unsigned char> in;
+	std::vector<unsigned char> out;
+	unsigned long width, height;
+	IOManager::readFileToBuffer(m_FilePath, in);
+	decodePNG(out, width, height, &(in[0]), in.size());
+
+	GLCall(glGenTextures(1, &m_RendererID));
+
+	GLCall(glBindTexture(GL_TEXTURE_2D, m_RendererID));
+
+	GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &(out[0])));
+
+	GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+	GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+	GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+	GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	
+	GLCall(glBindTexture(GL_TEXTURE_2D, 0));
+
+	m_Width = width;
+	m_Height = height;
 }
 
 Texture::~Texture()
